@@ -6,14 +6,14 @@ export type Theme = 'dark' | 'light';
 const ThemeContext = createContext<{
   theme: Theme;
   toggle: () => void;
-}>({ theme: 'dark', toggle: () => {} });
+}>({ theme: 'light', toggle: () => {} });
 
 function getInitialTheme(): Theme {
   if (typeof document !== 'undefined') {
     const attr = document.documentElement.getAttribute('data-theme');
     if (attr === 'light' || attr === 'dark') return attr;
   }
-  return 'dark';
+  return 'light';
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -23,7 +23,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('ziwei-theme') as Theme | null;
-    if (saved === 'light' || saved === 'dark') setTheme(saved);
+    // 只恢复有效的保存值；如果没有保存值，强制 light
+    if (saved === 'light' || saved === 'dark') {
+      setTheme(saved);
+    } else {
+      setTheme('light');
+      localStorage.setItem('ziwei-theme', 'light');
+    }
   }, []);
 
   useEffect(() => {
