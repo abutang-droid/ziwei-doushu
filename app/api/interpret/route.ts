@@ -15,8 +15,22 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { messages, chartData, mode } = body;
 
-    // 检查 API Key
-    const apiKey = process.env.DEEPSEEK_API_KEY || process.env.OPENAI_API_KEY;
+    // 优先使用 Manus 代理接口，其次 DeepSeek，最后 OpenAI
+    const apiKey =
+      process.env.MANUS_API_KEY ||
+      process.env.DEEPSEEK_API_KEY ||
+      process.env.OPENAI_API_KEY;
+
+    const baseUrl =
+      process.env.MANUS_API_BASE ||
+      (process.env.DEEPSEEK_API_KEY
+        ? 'https://api.deepseek.com/v1'
+        : 'https://api.openai.com/v1');
+
+    const model =
+      process.env.AI_MODEL ||
+      (process.env.DEEPSEEK_API_KEY ? 'deepseek-chat' : 'gpt-5-mini');
+
     if (!apiKey) {
       return NextResponse.json(
         { error: 'AI 解读功能暂未配置，请联系管理员设置 API Key。' },
@@ -30,13 +44,6 @@ export async function POST(req: NextRequest) {
       const modeLabel = mode === 'heming' ? '合盘（两人缘分）' : '单人命盘';
       systemContent += `\n\n当前解读模式：${modeLabel}\n命盘数据：\n${JSON.stringify(chartData, null, 2)}`;
     }
-
-    // 判断使用 DeepSeek 还是 OpenAI
-    const isDeepSeek = !!process.env.DEEPSEEK_API_KEY;
-    const baseUrl = isDeepSeek
-      ? 'https://api.deepseek.com/v1'
-      : 'https://api.openai.com/v1';
-    const model = isDeepSeek ? 'deepseek-chat' : 'gpt-4o-mini';
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
